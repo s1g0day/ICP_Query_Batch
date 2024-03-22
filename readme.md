@@ -181,7 +181,7 @@ etao.com
 homearch.store
 
 # 将域名保存到 1.txt
-# 运行代码，结果保存到outpu目录下。这个代码的妙用还请亲身体验
+# 运行代码，结果保存到log目录下。这个代码的妙用还请亲身体验
 [root@localhost icp_query_s1g0day]# python3 2.quchong.py 1.txt
 ```
 
