@@ -5,7 +5,6 @@ import json
 import random
 import requests
 from lib.hander_random import requests_headers
-from lib.socksreq import get_files_list
 
 headers = requests_headers()
 
@@ -49,12 +48,8 @@ def make_request(urls, params, search_data):
             url = url.strip()
             print(f"Query url: {url}")
             try:
-                if "x.x.x.x" in url:
-                    # response = req_get(url +'/query/web', params)
-                    response = get_files_list(url +'/query/web', params)
-                else:
-                    response = requests.get(url +'/query/web', params=params, headers=headers, allow_redirects=False)
-                    response.encoding = response.apparent_encoding # apparent_encoding比"utf-8"错误率更低
+                response = requests.get(url +'/query/web', params=params, headers=headers, allow_redirects=False)
+                response.encoding = response.apparent_encoding # apparent_encoding比"utf-8"错误率更低
                 if response.status_code == 200:
                     '''
                         {"code": 101, "msg": "参数错误,请指定search参数"}
