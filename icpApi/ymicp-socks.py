@@ -1,7 +1,7 @@
 '''
 author     : Yiming
 Creat time : 2023/9/8 16:53
-modification time: 2023/11/30 12:21
+modification time: 2024/2/21 14:52
 Blog       : https://www.cnblogs.com/ymer
 Github     : https://github.com/HG-ha
 Home       : https://api.wer.plus
@@ -20,6 +20,9 @@ import ujson
 import random
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
+import string
+import os
+from detnate import detnate
 
 class beian():
     def __init__(self):
@@ -55,11 +58,27 @@ class beian():
         self.blackqueryByCondition = 'https://hlwicpfwc.miit.gov.cn/icpproject_query/api/blackListDomain/queryByCondition'
         # 违法违规APP,小程序,快应用
         self.blackappAndMiniByCondition = 'https://hlwicpfwc.miit.gov.cn/icpproject_query/api/blackListDomain/queryByCondition_appAndMini'
-        
-        # 设置socks5 代理
-        self.proxy_address = 'socks5://127.0.0.1:1080'
-        self.session = None
+        self.det = detnate()
+        self.p_uuid = ''
 
+        # 设置代理池 https://www.kuaidaili.com/
+        self.page_url = "https://dev.kdlapi.com/testproxy"
+        # 隧道域名:端口号
+        self.tunnel = "XXX.XXX.com:15818"
+        # 用户名和密码方式
+        self.username = "username"
+        self.password = "password"
+        self.proxy_auth = aiohttp.BasicAuth(self.username, self.password)
+
+    def generate_random_filename(self, length=8, extension=None):
+        if not os.path.exists('temp'):
+            os.makedirs('temp')
+        letters = string.ascii_lowercase
+        random_filename = "temp/" +''.join(random.choice(letters) for _ in range(length))
+        if extension != None:
+            random_filename += '.' + extension
+        return random_filename
+    
     async def _init_session(self):
         self.session = aiohttp.ClientSession()
     
@@ -81,7 +100,7 @@ class beian():
                 'Accept': 'application/json, text/plain, */*'
             }
         try:
-            async with self.session.post(self.url,data=self.auth_data,headers=self.base_header,proxy=self.proxy_address) as req:
+            async with self.session.post(self.url,data=self.auth_data,headers=self.base_header,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
                 req = await req.text()
                 t = ujson.loads(req)
                 return t['params']['bussiness']
@@ -89,7 +108,7 @@ class beian():
             return e
 
     async def get_cookie(self):
-        async with self.session.get(self.home,headers=self.cookie_headers,proxy=self.proxy_address) as req:
+        async with self.session.get(self.home,headers=self.cookie_headers,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
             jsluid_s = re.compile('[0-9a-z]{32}').search(str(req.cookies))[0]
             return jsluid_s
 
@@ -125,7 +144,8 @@ class beian():
             length = str(len(str(data).encode('utf-8')))
             self.base_header.update({'Content-Length': length, 'Token': self.token})
             self.base_header['Content-Type'] = 'application/json'
-            async with self.session.post(self.getCheckImage,data=data,headers=self.base_header,proxy=self.proxy_address) as req:
+ 
+            async with self.session.post(self.getCheckImage,data=data,headers=self.base_header,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
                 res = await req.json()
                 self.p_uuid = res['params']['uuid']
                 big_image = res['params']['bigImage']
@@ -133,57 +153,32 @@ class beian():
                 self.secretKey = res['params']['secretKey']
                 self.wordCount = res['params']['wordCount']
                 selice_small = await self.small_selice(small_image,big_image)
-                pointJson = self.get_pointJson(selice_small,self.secretKey)
-                data = ujson.loads(ujson.dumps({"token":self.p_uuid,
-                        "secretKey":self.secretKey,
-                        "clientUid":clientUid,
-                        "pointJson":pointJson}))
-                length = str(len(str(data).encode('utf-8')))
-                self.base_header.update({'Content-Length': length})
-                async with self.session.post(self.checkImage,
-                        json=data,headers=self.base_header,proxy=self.proxy_address) as req:
-                    res = await req.text()
-                    data = ujson.loads(res)
-                    if data["success"] == False:
-                        return 
-                    else:
-                        return data["params"]["sign"]
-            return
+            
+            pointJson = self.get_pointJson(selice_small,self.secretKey)
+            data = ujson.loads(ujson.dumps({"token":self.p_uuid,
+                    "secretKey":self.secretKey,
+                    "clientUid":clientUid,
+                    "pointJson":pointJson}))
+            length = str(len(str(data).encode('utf-8')))
+            self.base_header.update({'Content-Length': length})
+            async with self.session.post(self.checkImage,
+                    json=data,headers=self.base_header,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
+                res = await req.text()
+                data = ujson.loads(res)
+                if data["success"] == False:
+                    return 'verf error'
+                else:
+                    return data["params"]["sign"]
         except Exception as e:
-            print("过验证码失败错误：",e)
             return False
-        
-    # 验证码大图的回调，用于记录点选位置
-    def mouse_callback(self,event, x, y, flags, param):
-        if event == cv2.EVENT_LBUTTONDOWN:
-            # print(f"点击的像素位置：x轴 {x} y轴 {y}")
-            self.ibigx.append({"x":x,"y":y})
-            if len(self.ibigx) == self.wordCount:
-                cv2.destroyAllWindows()
 
-    # 在这里，不管你是自己实现验证码点选，或者对接打码平台也好
-    # 最终的return必须是四个需要点选的汉字的坐标
-    # 像这样[{"x":289,"y":155},{"x":39,"y":133},{"x":137,"y":23},{"x":193,"y":79}]
     async def small_selice(self,small_image,big_image):
-        # 小验证码彩图
         isma = cv2.imdecode(np.frombuffer(base64.b64decode(small_image),np.uint8), cv2.COLOR_GRAY2RGB)
-
-
-        # 去根据保存的isma.jpg去依次点击验证码
-        cv2.imwrite('isma.jpg',isma)
-
-
+        isma = cv2.cvtColor(isma, cv2.COLOR_BGRA2BGR)
         ibig = cv2.imdecode(np.frombuffer(base64.b64decode(big_image),np.uint8), cv2.COLOR_GRAY2RGB)
-        print("\n\t请根据 isma.jpg 依次点击窗口中的汉字\n")
-        self.ibigx = []
-        cv2.imshow('isma.jpg',isma)
-        cv2.imshow('Click the characters one by one according to isma.jpg', ibig)
-        # 设置鼠标回调函数
-        cv2.setMouseCallback('Click the characters one by one according to isma.jpg', self.mouse_callback)
-        cv2.waitKey(0)
+        data = self.det.check_target(ibig,isma)
+        return data
         
-        return self.ibigx
-
 
     async def getbeian(self,name,sp,pageNum,pageSize,):
         info = ujson.loads(self.typj.get(sp))
@@ -191,9 +186,11 @@ class beian():
         info['pageSize'] = pageSize
         info['unitName'] = name
         sign = await self.check_img()
+        if sign == 'verf error':
+            return {'code':201,'error':'验证码识别失败'}
         length = str(len(str(ujson.dumps(info,ensure_ascii=False)).encode('utf-8')))
         self.base_header.update({'Content-Length': length, 'Uuid': self.p_uuid, 'Token': self.token, 'Sign': sign})
-        async with self.session.post(self.queryByCondition, data=ujson.dumps(info,ensure_ascii=False), headers=self.base_header,proxy=self.proxy_address) as req:
+        async with self.session.post(self.queryByCondition, data=ujson.dumps(info,ensure_ascii=False), headers=self.base_header,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
             res = await req.text()
             return ujson.loads(res)
         
@@ -204,21 +201,28 @@ class beian():
         else:
             info['serviceName'] = name
         sign = await self.check_img()
+        if sign == 'verf error':
+            return {'code':201,'error':'验证码识别失败'}
         length = str(len(str(ujson.dumps(info,ensure_ascii=False)).encode('utf-8')))
         self.base_header.update({'Content-Length': length, 'Uuid': self.p_uuid, 'Token': self.token, 'Sign': sign})
         async with self.session.post(
             self.blackqueryByCondition if sp == 0 else self.blackappAndMiniByCondition, 
                                      data=ujson.dumps(info,ensure_ascii=False), 
-                                     headers=self.base_header,proxy=self.proxy_address) as req:
+                                     headers=self.base_header,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
             res = await req.text()
             return ujson.loads(res)
 
+    async def fetch(self):
+        async with self.session.get(self.page_url, proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as response:
+            return await response.text()
+
     async def autoget(self,name,sp,pageNum='',pageSize='',b=1):
         await self._init_session()
+        html = await self.fetch()
+        print(html)
         try:
             data = await self.getbeian(name,sp,pageNum,pageSize) if b == 1 else await self.getblackbeian(name,sp)
         except Exception as e:
-            print(e)
             return {"code":122,"msg":"查询失败"}
         finally:
             await self._close_session()

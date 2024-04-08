@@ -205,6 +205,50 @@ homearch.store
 
 ---
 
+20240408-补充
+
+朋友给了一个[快代理](https://www.kuaidaili.com/)的账号，我测试了一下可以正常使用，确实比我免费的好使。
+
+如果使用代理池的话需要将`icpApi/ymicp-socks.py`的内容替换到docker环境中的`ymicp.py`，其中需要修改以下信息
+
+```
+        # 隧道域名:端口号
+        self.tunnel = "XXX.XXX.com:15818"
+        # 用户名和密码方式
+        self.username = "username"
+        self.password = "password"
+```
+
+测试成功，可以看到使用了client ip，并且查询成功。但失败率是比较高，重试了6遍才成功
+
+```
+root@323f2fa05c9a:/icpApi_20240221_yolo8# python3 ymicp-socks.py 
+Loading weights into state dict...
+model_data/best_epoch_weights.pth model loaded.
+Configurations:
+----------------------------------------------------------------------
+|                     keys |                                   values|
+----------------------------------------------------------------------
+|               model_path |        model_data/best_epoch_weights.pth|
+|              input_shape |                                 [32, 32]|
+|          letterbox_image |                                    False|
+|                     cuda |                                    False|
+----------------------------------------------------------------------
+sucess! client ip: 117.90.45.134 
+Loading model_data/best.onnx for ONNX Runtime inference...
+
+0: 320x320 5 texts, 32.1ms
+Speed: 1.7ms preprocess, 32.1ms inference, 12.2ms postprocess per image at shape (1, 3, 320, 320)
+查询结果：
+{'code': 200, 'msg': '操作成功', 'params': {'endRow': 0, 'firstPage': 1, 'hasNextPage': False, 'hasPreviousPage': False, 'isFirstPage': True, 'isLastPage': True, 'lastPage': 1, 'list': [{'contentTypeName': '出版、文化、出版、新闻、宗教、出版、宗教、文化、新闻、新闻', 'domain': 'qq.com', 'domainId': 190000203203, 'leaderName': '', 'limitAccess': '否', 'mainId': 547280, 'mainLicence': '粤B2-20090059', 'natureName': '企业', 'serviceId': 4134047, 'serviceLicence': '粤B2-20090059-5', 'unitName': '深圳市腾讯计算机系统有限公司', 'updateRecordTime': '2022-09-06 15:51:52'}], 'navigatePages': 8, 'navigatepageNums': [1], 'nextPage': 1, 'pageNum': 1, 'pageSize': 10, 'pages': 1, 'prePage': 1, 'size': 1, 'startRow': 0, 'total': 1}, 'success': True}
+```
+
+以上只是使用示例，可以根据自己的情况做出响应的调试。
+
+---
+
+
+
 再次感谢`HG-ha`师傅， [ICP_Query 项目](https://github.com/HG-ha/ICP_Query) 好用！！！
 
 如果本项目对你有用，还请star一下。哈哈
