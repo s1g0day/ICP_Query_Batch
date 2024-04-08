@@ -5,23 +5,35 @@ from lib.logo import logo
 from lib.Requests_func import make_request
 from argparse import ArgumentParser
 
-def query_from(query_url, search_data):
+def query_from(query_url, search_data, page_Num=1):
     params = {
         'search': search_data,
+        'pageNum': page_Num,
+        'pageSize': '10',
     }
-    req_list = make_request(query_url, params, search_data)
+    req = make_request(query_url, params, search_data)
+    req_list = req['params']['list']
     if req_list:
-        unitName_list = make_request(query_url, params, req_list[0]['unitName'])
-        if unitName_list:
-            for item in unitName_list:
-                if item.get('domain') and item.get('unitName'):
-                    output = f"unitName:{item['unitName']}, domain:{item['domain']}"
-                    print(output)
-                    open('log/success.log', 'a+', encoding='utf-8').write(str(output)+'\n')
-                else:
-                    print("unitName or domain is None...")
-        else:
-            print(f"No unitName_list found for {req_list}. Skipping...")
+        req_unitName = make_request(query_url, params, req_list[0]['unitName'])
+        lastPage = req_unitName['params']['lastPage']
+        print(f"Total pages: {lastPage}")
+
+        for page in range(1, lastPage + 1):
+            params['pageNum'] = page
+            req_unitName = make_request(query_url, params, req_list[0]['unitName'])
+            unitName_list = req_unitName['params']['list']
+
+            if unitName_list:
+                print(req_list[0]['unitName'])
+                for item in unitName_list:
+                    if item.get('domain') and item.get('unitName'):
+                        output = f"unitName:{item['unitName']}, domain:{item['domain']}"
+                        print(output)
+                        open('log/success.log', 'a+', encoding='utf-8').write(str(output)+'\n')
+                    else:
+                        print("unitName or domain is None...")
+            else:
+                print(f"No unitName_list found for {req_list}. Skipping...")
     else:
         print(f"No req_list found for {search_data}. Skipping...")
         open('log/no_req_list.log', 'a+', encoding='utf-8').write(search_data+'\n')
@@ -66,10 +78,11 @@ if __name__ == '__main__':
         else:
             print(f"Query_urls: {args.query_url}\nDomains_file: {push_config['domains_file']}")
             query_from_file(args.query_url, push_config['domains_file'], args.start_index)
+            
     else:
         if args.domain:
             # 执行查询
-            query_from(args.query_url, args.domain)
+            query_from(push_config['query_url'], args.domain)
         elif args.domains_file:
             print(f"Query_urls: {push_config['query_url']}\nDomains_file: {args.domains_file}")
             query_from_file(push_config['query_url'], args.domains_file, args.start_index)

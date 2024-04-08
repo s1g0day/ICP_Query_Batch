@@ -5,6 +5,7 @@ import json
 import random
 import requests
 from lib.hander_random import requests_headers
+from lib.socksreq import get_files_list
 
 headers = requests_headers()
 
@@ -12,11 +13,11 @@ def req_get(url, params):
 
     proxies = {
         # 用sock协议时只能用socks5h 不能用socks5,或者用http协议
-        'http':'socks5h://127.0.0.1:1080',
-        'https':'socks5h://127.0.0.1:1080'
+        'http':'socks5h://192.168.88.21:8443',
+        'https':'socks5h://192.168.88.21:8443'
     }
     try:
-        res = requests.get(url=url, headers=headers, params=params, verify=False, allow_redirects=False, proxies=proxies)
+        res = requests.get(url=url, headers=headers, params=params, verify=False, proxies=proxies)
         res.encoding = res.apparent_encoding # apparent_encoding比"utf-8"错误率更低
         return res
     except:
@@ -48,8 +49,12 @@ def make_request(urls, params, search_data):
             url = url.strip()
             print(f"Query url: {url}")
             try:
-                response = requests.get(url +'/query/web', params=params, headers=headers, allow_redirects=False)
-                response.encoding = response.apparent_encoding # apparent_encoding比"utf-8"错误率更低
+                if "x.x.x.x" in url:
+                    # response = req_get(url +'/query/web', params)
+                    response = get_files_list(url +'/query/web', params)
+                else:
+                    response = requests.get(url +'/query/web', params=params, headers=headers, allow_redirects=False)
+                    response.encoding = response.apparent_encoding # apparent_encoding比"utf-8"错误率更低
                 if response.status_code == 200:
                     '''
                         {"code": 101, "msg": "参数错误,请指定search参数"}
@@ -63,7 +68,7 @@ def make_request(urls, params, search_data):
                         success_sleep = random.randint(5, 15)
                         print(f"Query was successful. wait {success_sleep}s ...")
                         time.sleep(success_sleep)  # 间隔重试
-                        return req['params']['list']
+                        return req
                     else:
                         print("Request failed. Retrying...")
                         if req.get('code') == 201:

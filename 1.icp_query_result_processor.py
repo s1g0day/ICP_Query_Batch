@@ -21,4 +21,5 @@ with open(sys.argv[1], 'r', encoding='utf-8') as fileread:
             # 添加到字典
             task_dict[key] = value
         # 打印字典
+        # print(task_dict['unitName'])
         print(task_dict['domain'])
