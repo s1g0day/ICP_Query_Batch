@@ -14,17 +14,21 @@ def query_from(query_url, search_data, page_Num=1):
     req = make_request(query_url, params, search_data)
     req_list = req['params']['list']
     if req_list:
-        req_unitName = make_request(query_url, params, req_list[0]['unitName'])
+        params['search'] = req_list[0]['unitName']
+        req_unitName = make_request(query_url, params, params['search'])
         lastPage = req_unitName['params']['lastPage']
         print(f"Total pages: {lastPage}")
-
+        
         for page in range(1, lastPage + 1):
-            params['pageNum'] = page
-            req_unitName = make_request(query_url, params, req_list[0]['unitName'])
-            unitName_list = req_unitName['params']['list']
-
+            if page == 1:
+                unitName_list = req_unitName['params']['list']
+                print(f"Planned speed: {page}/{lastPage}")
+            else:
+                params['pageNum'] = page
+                req_page_unitName = make_request(query_url, params, req_list[0]['unitName'])
+                unitName_list = req_page_unitName['params']['list']
+                print(f"{page}/{lastPage}")
             if unitName_list:
-                print(req_list[0]['unitName'])
                 for item in unitName_list:
                     if item.get('domain') and item.get('unitName'):
                         output = f"unitName:{item['unitName']}, domain:{item['domain']}"
