@@ -1,4 +1,9 @@
-# 通过接口查询域名或公司备案
+'''
+Author     : S1g0day
+Creat time : 2024/3/15 17:27
+Modification time: 2024/5/22 12:00
+Introduce  : 通过接口查询域名或公司备案
+'''
 
 import yaml
 from lib.logo import logo
