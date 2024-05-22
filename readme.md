@@ -33,6 +33,7 @@ docker run -d -p 16181:16181 yiminger/ymicp:yolo8_latest
 │   ├── Processing_Domain.log
 │   ├── error.log
 │   ├── error_Max.log
+│   ├── error_status_code.log
 │   ├── no_req_list.log
 │   └── success.log
 ```
