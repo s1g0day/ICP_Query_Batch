@@ -150,6 +150,7 @@ python3 0.icp_query.py -s 4
 ├── error.log					# 报错日志，代码初期调试用的(可忽略)
 ├── error_Max.log				# 关键日志, 代码中对domains中的每行数据最多遍历10次，如果10次都查询错误，会写入到这个日志，方便对其重新测试
 ├── error_status_code.log		# 报错日志, 测试平台地址请求失败日志(可忽略)，通过error_Max.log查询失败的记录
+├── error_icp.log         # 查询异常日志，主要是记录总量与实际数据不符的问题
 ├── no_req_list.log				# 关键日志，存储了查询正常但没有数据回显的情况，需要注意是否是domians信息填错，如公司名称为简写等
 └── success.log					# 关键日志, 查询成功且获取到所有备案域名信息
 ```
@@ -186,6 +187,10 @@ homearch.store
 # 运行代码，结果保存到log目录下。这个代码的妙用还请亲身体验
 [root@localhost icp_query_s1g0day]# python3 2.quchong.py 1.txt
 ```
+
+# Lssuse
+
+该项目只适合分享、学习、交流，不得用于商业及非法用途。觉得项目不错的小伙伴，可以在右上角Star一下，后期项目会不断优化，在使用过程中什么建议与BUG ，欢迎大家提交Lssuse
 
 # 后续
 
@@ -253,6 +258,7 @@ Speed: 1.7ms preprocess, 32.1ms inference, 12.2ms postprocess per image at shape
 
 - 最近有师傅使用相同的技术栈重写了一个查询工具[ICP-spider](https://github.com/ravizhan/ICP-spider/)，尝试了下速度和准确度确实比当前的速度快，应该是重新训练了数据模型，感兴趣的可以试用一下。
 - 当前项目稳定运行，近段时间也比较忙，暂时不进行合并了。下个大版本重新训练一下，搞个查询过程中自动添加数据并进行训练的功能，感兴趣的师傅可以自己二开一下。
+
 
 ---
 
