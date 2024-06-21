@@ -209,7 +209,7 @@ homearch.store
 
 本次使用的是 [Rain-kl/glider_guid41asd4asd](https://github.com/Rain-kl/glider_guid41asd4asd) 组成的代理池
 
-**协议选择：**我的订阅有两个协议：ss和trojan，之前一直用的是ss，但存在一些未知的问题无法应用到aiohttp上面。今天稍微做了一些修改，改为使用trojan协议，发现竟然可以用，多走多少弯路。
+**协议选择**: 我的订阅有两个协议：ss和trojan，之前一直用的是ss，但存在一些未知的问题无法应用到aiohttp上面。今天稍微做了一些修改，改为使用trojan协议，发现竟然可以用，多走多少弯路。
 
 修改`订阅转换.py`，生成`forward=trojan://pass@host:port[?serverName=SERVERNAME][&skipVerify=true][&cert=PATH]`
 
