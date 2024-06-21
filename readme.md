@@ -194,21 +194,47 @@ homearch.store
 
 # 后续
 
-关于使用代理的问题
+20240621-更新
 
-- 添加代理需要再原项目上做修改，测试了几次后，由于之前的问题，遂放弃了使用。
+没事的时候还是要想想怎么解决代理或代理池问题，针对本地和远程服务器分别有几种方案
 
-- 后测试代理节点使用浏览器正常访问到`beian.miit.gov.cn`，仅python无法使用，所以是自身的代码问题，但已经折腾完负载了，就不想再折腾了
+- 本地
+  - [x] 修改代码使aiohttp走代理
+  - [ ] ~~linux环境走全局代理~~
+  - [ ] ~~docker容器启动时走socks~~
+  - [ ] ~~利用proxychains使python走代理~~
+- 远程
+  - [x] 修改代码使aiohttp走代理
+  - [ ] ~~合理购买代理池~~
 
-- 我这里提供一份代码文件`icpApi\ymicp-socks.py`及使用的代理池项目
+本次使用的是 [Rain-kl/glider_guid41asd4asd](https://github.com/Rain-kl/glider_guid41asd4asd) 组成的代理池
 
-  ```
-  爱加速代理池: https://github.com/s1g0day/Aijiasu_Agent_Pool
-  节点转换成爬虫代理池: https://github.com/Rain-kl/glider_guid41asd4asd
-  免费代理IP池: https://github.com/pingc0y/go_proxy_pool
-  ```
+**协议选择：**我的订阅有两个协议：ss和trojan，之前一直用的是ss，但存在一些未知的问题无法应用到aiohttp上面。今天稍微做了一些修改，改为使用trojan协议，发现竟然可以用，多走多少弯路。
 
-  如果有解决的师傅，还请给小弟一个`fork`的机会
+修改`订阅转换.py`，生成`forward=trojan://pass@host:port[?serverName=SERVERNAME][&skipVerify=true][&cert=PATH]`
+
+```
+def parse_config(array: list):
+	'''其他代码'''
+	trojan = []
+    # { name: 香港02, type: trojan, server: xxx.xxx.cn, port: 50002, password: e9fa580, udp: true, sni: xxxx-cert.com, skip-cert-verify: true }
+	'''其他代码'''
+        elif node['type'] == 'trojan':
+            node = f"{node['type']}://{node['password']}@{node['server']}:{node['port']}?serverName={node['sni']}&skipVerify={node['skip-cert-verify']}#{node['name']}"
+            trojan.append(node)
+	'''其他代码'''
+    for node in trojan:
+        print(f'forward={node}')
+```
+
+修改原本`ymicp-socks.py`代码，后续详情阅读 `icpApi/readme.md`
+
+---
+
+20240522-更新
+
+- 最近有师傅使用相同的技术栈重写了一个查询工具[ICP-spider](https://github.com/ravizhan/ICP-spider/)，尝试了下速度和准确度确实比当前的速度快，应该是重新训练了数据模型，感兴趣的可以试用一下。
+- 当前项目稳定运行，近段时间也比较忙，暂时不进行合并了。下个大版本重新训练一下，搞个查询过程中自动添加数据并进行训练的功能，感兴趣的师傅可以自己二开一下。
 
 ---
 
@@ -254,11 +280,21 @@ Speed: 1.7ms preprocess, 32.1ms inference, 12.2ms postprocess per image at shape
 
 ---
 
-20240522-更新
+关于使用代理的问题
 
-- 最近有师傅使用相同的技术栈重写了一个查询工具[ICP-spider](https://github.com/ravizhan/ICP-spider/)，尝试了下速度和准确度确实比当前的速度快，应该是重新训练了数据模型，感兴趣的可以试用一下。
-- 当前项目稳定运行，近段时间也比较忙，暂时不进行合并了。下个大版本重新训练一下，搞个查询过程中自动添加数据并进行训练的功能，感兴趣的师傅可以自己二开一下。
+- 添加代理需要再原项目上做修改，测试了几次后，由于之前的问题，遂放弃了使用。
 
+- 后测试代理节点使用浏览器正常访问到`beian.miit.gov.cn`，仅python无法使用，所以是自身的代码问题，但已经折腾完负载了，就不想再折腾了
+
+- 我这里提供一份代码文件`icpApi\ymicp-socks.py`及使用的代理池项目
+
+  ```
+  爱加速代理池: https://github.com/s1g0day/Aijiasu_Agent_Pool
+  节点转换成爬虫代理池: https://github.com/Rain-kl/glider_guid41asd4asd
+  免费代理IP池: https://github.com/pingc0y/go_proxy_pool
+  ```
+
+  如果有解决的师傅，还请给小弟一个`fork`的机会
 
 ---
 

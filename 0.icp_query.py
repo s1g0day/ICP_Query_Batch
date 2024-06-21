@@ -25,11 +25,11 @@ def Page_traversal(pages, req_unitName, params, query_url, req_list):
         if unitName_list:
             for item in unitName_list:
                 if item.get('domain') and item.get('unitName'):
-                    output = f"unitName:{item['unitName']}, domainId:{item['domainId']}, domain:{item['domain']}, serviceLicence:{item['serviceLicence']}"
+                    output = f"unitName:{item['unitName']}\tdomainId:{item['domainId']}\tserviceLicence:{item['serviceLicence']}\tdomain:{item['domain']}"
                     print(output)
                     if item['domainId'] and item['domainId'] not in domainId_list:
                         domainId_list.append(item['domainId'])
-                        open('log/success.log', 'a+', encoding='utf-8').write(f"{output}\n")
+                        open('log/success.log', 'a+', encoding='utf-8').write(f"\n{output}")
                 else:
                     print("unitName or domain is None...")
         else:
@@ -46,11 +46,11 @@ def Page_traversal_temporary(total, params, query_url, req_list):
     if unitName_list:
         for item in unitName_list:
             if item.get('domain') and item.get('unitName'):
-                output = f"unitName:{item['unitName']}, domainId:{item['domainId']}, domain:{item['domain']}, serviceLicence:{item['serviceLicence']}"
+                output = f"unitName:{item['unitName']}\tdomainId:{item['domainId']}\tserviceLicence:{item['serviceLicence']}\tdomain:{item['domain']}"
                 print(output)
                 if item['domainId'] and item['domainId'] not in domainId_list:
                     domainId_list.append(item['domainId'])
-                    open('log/success.log', 'a+', encoding='utf-8').write(f"{output}\n")
+                    open('log/success.log', 'a+', encoding='utf-8').write(f"\n{output}")
             else:
                 print("unitName or domain is None...")
     else:

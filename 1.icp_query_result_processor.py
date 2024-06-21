@@ -5,7 +5,7 @@ import sys
 with open(sys.argv[1], 'r', encoding='utf-8') as fileread:
     fileread = fileread.readlines()
     for i in fileread:
-        task_parts = i.strip().split(', ')
+        task_parts = i.strip().split('\t')
         # 创建空字典
         task_dict = {}
 

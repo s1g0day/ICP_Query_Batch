@@ -23,6 +23,7 @@ from Crypto.Util.Padding import pad
 import string
 import os
 from detnate import detnate
+from aiohttp_socks import SocksConnector
 
 class beian():
     def __init__(self):
@@ -61,15 +62,6 @@ class beian():
         self.det = detnate()
         self.p_uuid = ''
 
-        # 设置代理池 https://www.kuaidaili.com/
-        self.page_url = "https://dev.kdlapi.com/testproxy"
-        # 隧道域名:端口号
-        self.tunnel = "XXX.XXX.com:15818"
-        # 用户名和密码方式
-        self.username = "username"
-        self.password = "password"
-        self.proxy_auth = aiohttp.BasicAuth(self.username, self.password)
-
     def generate_random_filename(self, length=8, extension=None):
         if not os.path.exists('temp'):
             os.makedirs('temp')
@@ -80,7 +72,7 @@ class beian():
         return random_filename
     
     async def _init_session(self):
-        self.session = aiohttp.ClientSession()
+        self.session = aiohttp.ClientSession(connector=SocksConnector.from_url('socks5://127.0.0.1:7890'))
     
     async def _close_session(self):
         if self.session is not None:
@@ -100,7 +92,7 @@ class beian():
                 'Accept': 'application/json, text/plain, */*'
             }
         try:
-            async with self.session.post(self.url,data=self.auth_data,headers=self.base_header,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
+            async with self.session.post(self.url,data=self.auth_data,headers=self.base_header) as req:
                 req = await req.text()
                 t = ujson.loads(req)
                 return t['params']['bussiness']
@@ -108,7 +100,7 @@ class beian():
             return e
 
     async def get_cookie(self):
-        async with self.session.get(self.home,headers=self.cookie_headers,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
+        async with self.session.get(self.home,headers=self.cookie_headers) as req:
             jsluid_s = re.compile('[0-9a-z]{32}').search(str(req.cookies))[0]
             return jsluid_s
 
@@ -145,7 +137,7 @@ class beian():
             self.base_header.update({'Content-Length': length, 'Token': self.token})
             self.base_header['Content-Type'] = 'application/json'
  
-            async with self.session.post(self.getCheckImage,data=data,headers=self.base_header,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
+            async with self.session.post(self.getCheckImage,data=data,headers=self.base_header) as req:
                 res = await req.json()
                 self.p_uuid = res['params']['uuid']
                 big_image = res['params']['bigImage']
@@ -162,7 +154,7 @@ class beian():
             length = str(len(str(data).encode('utf-8')))
             self.base_header.update({'Content-Length': length})
             async with self.session.post(self.checkImage,
-                    json=data,headers=self.base_header,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
+                    json=data,headers=self.base_header) as req:
                 res = await req.text()
                 data = ujson.loads(res)
                 if data["success"] == False:
@@ -190,7 +182,7 @@ class beian():
             return {'code':201,'error':'验证码识别失败'}
         length = str(len(str(ujson.dumps(info,ensure_ascii=False)).encode('utf-8')))
         self.base_header.update({'Content-Length': length, 'Uuid': self.p_uuid, 'Token': self.token, 'Sign': sign})
-        async with self.session.post(self.queryByCondition, data=ujson.dumps(info,ensure_ascii=False), headers=self.base_header,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
+        async with self.session.post(self.queryByCondition, data=ujson.dumps(info,ensure_ascii=False), headers=self.base_header) as req:
             res = await req.text()
             return ujson.loads(res)
         
@@ -208,18 +200,12 @@ class beian():
         async with self.session.post(
             self.blackqueryByCondition if sp == 0 else self.blackappAndMiniByCondition, 
                                      data=ujson.dumps(info,ensure_ascii=False), 
-                                     headers=self.base_header,proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as req:
+                                     headers=self.base_header) as req:
             res = await req.text()
             return ujson.loads(res)
 
-    async def fetch(self):
-        async with self.session.get(self.page_url, proxy="http://"+self.tunnel, proxy_auth=self.proxy_auth) as response:
-            return await response.text()
-
     async def autoget(self,name,sp,pageNum='',pageSize='',b=1):
         await self._init_session()
-        html = await self.fetch()
-        print(html)
         try:
             data = await self.getbeian(name,sp,pageNum,pageSize) if b == 1 else await self.getblackbeian(name,sp)
         except Exception as e:
