@@ -242,7 +242,7 @@ def parse_config(array: list):
 
 朋友给了一个[快代理](https://www.kuaidaili.com/)的账号，我测试了一下可以正常使用，确实比我免费的好使。
 
-如果使用代理池的话需要将`icpApi/ymicp-socks.py`的内容替换到docker环境中的`ymicp.py`，其中需要修改以下信息
+如果使用代理池的话需要将`icpApi/ymicp_socks_proxys.py`的内容替换到docker环境中的`ymicp.py`，其中需要修改以下信息
 
 ```
         # 隧道域名:端口号
