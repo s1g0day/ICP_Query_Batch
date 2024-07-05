@@ -1,3 +1,10 @@
+'''
+Author     : S1g0day
+Creat time : 2024/3/15 17:27
+Modification time: 2024/7/5 18:00
+Introduce  : 处理0.icq_query.py 的结果 success.log
+'''
+
 import sys
 import openpyxl
 
