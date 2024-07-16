@@ -229,6 +229,8 @@ def parse_config(array: list):
 
 修改原本`ymicp-socks.py`代码，后续详情阅读 `icpApi/readme.md`
 
+> 注: 此次方案可以仅单机部署，不在需要负载多节点的方式
+
 ---
 
 20240522-更新
