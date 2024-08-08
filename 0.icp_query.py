@@ -103,7 +103,7 @@ def query_from(query_url, search_data, page_Num=1):
         return total
     else:
         print(f"No req_list found for {search_data}. Skipping...")
-        no_req_list_file_path = 'log/error_icp.log'
+        no_req_list_file_path = 'log/no_req_list.log'
 
         if not is_output_in_log(no_req_list_file_path, search_data):
             open(no_req_list_file_path, 'a+', encoding='utf-8').write(f"{search_data}\n")
