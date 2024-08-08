@@ -1,7 +1,7 @@
 '''
 Author     : S1g0day
 Creat time : 2024/3/15 17:27
-Modification time: 2024/8/8 11:30
+Modification time: 2024/8/8 18:00
 Introduce  : 通过接口查询域名或公司备案
 '''
 import os
@@ -58,7 +58,7 @@ def Page_traversal_temporary(total, params, query_url, req_list):
     if unitName_list:
         for item in unitName_list:
             if item.get('domain') and item.get('unitName'):
-                success_output = f"unitName:{item['unitName']}\tdomainId:{item['domainId']}\tmainLicence:{item['mainLicence']}\tserviceLicence:{item['serviceLicence']}\tdomain:{item['domain']}\tnatureName:{item['natureName']}\tupdateRecordTime:{item['updateRecordTime']}"
+                success_output = f"domainId:{item['domainId']}\tunitName:{item['unitName']}\tnatureName:{item['natureName']}\tdomain:{item['domain']}\tmainLicence:{item['mainLicence']}\tserviceLicence:{item['serviceLicence']}\tupdateRecordTime:{item['updateRecordTime']}"
                 print(success_output)
                 
                 if item['domainId'] and item['domainId'] not in domainId_list:
