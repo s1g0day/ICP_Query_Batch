@@ -1,41 +1,53 @@
 '''
 Author     : S1g0day
 Creat time : 2024/3/15 17:27
-Modification time: 2024/6/19 10:00
+Modification time: 2024/8/8 11:30
 Introduce  : 通过接口查询域名或公司备案
 '''
-
+import os
 import yaml
 from lib.logo import logo
+from datetime import datetime
 from lib.Requests_func import make_request
 from argparse import ArgumentParser
 
-def Page_traversal(pages, req_unitName, params, query_url, req_list):
-    # 原函数，通过分页处理。但分页查询存在数据重复问题
-    domainId_list = []
-    for page in range(1, pages + 1):
-        if page == 1:
-            unitName_list = req_unitName['params']['list']
-            print(f"Planned speed: {page}/{pages}")
-        else:
-            params['pageNum'] = page
-            req_page_unitName = make_request(query_url, params, req_list[0]['unitName'])
-            unitName_list = req_page_unitName['params']['list']
-            print(f"{page}/{pages}")
-        if unitName_list:
-            for item in unitName_list:
-                if item.get('domain') and item.get('unitName'):
-                    output = f"unitName:{item['unitName']}\tdomainId:{item['domainId']}\tserviceLicence:{item['serviceLicence']}\tdomain:{item['domain']}"
-                    print(output)
-                    if item['domainId'] and item['domainId'] not in domainId_list:
-                        domainId_list.append(item['domainId'])
-                        open('log/success.log', 'a+', encoding='utf-8').write(f"\n{output}")
-                else:
-                    print("unitName or domain is None...")
-        else:
-            print(f"No unitName_list found for {req_list}. Skipping...")
-    return domainId_list
+# def Page_traversal(pages, req_unitName, params, query_url, req_list):
+#     # 原函数，通过分页处理。但分页查询存在数据重复问题
+#     domainId_list = []
+#     for page in range(1, pages + 1):
+#         if page == 1:
+#             unitName_list = req_unitName['params']['list']
+#             print(f"Planned speed: {page}/{pages}")
+#         else:
+#             params['pageNum'] = page
+#             req_page_unitName = make_request(query_url, params, req_list[0]['unitName'])
+#             unitName_list = req_page_unitName['params']['list']
+#             print(f"{page}/{pages}")
+#         if unitName_list:
+#             for item in unitName_list:
+#                 if item.get('domain') and item.get('unitName'):
+#                     output = f"unitName:{item['unitName']}\tdomainId:{item['domainId']}\tmainLicence:{item['mainLicence']}\tserviceLicence:{item['serviceLicence']}\tdomain:{item['domain']}\tnatureName:{item['natureName']}\tupdateRecordTime:{item['updateRecordTime']}"
+#                     print(output)
+#                     if item['domainId'] and item['domainId'] not in domainId_list:
+#                         domainId_list.append(item['domainId'])
+#                         open('log/success.log', 'a+', encoding='utf-8').write(f"\n{output}")
+#                 else:
+#                     print("unitName or domain is None...")
+#         else:
+#             print(f"No unitName_list found for {req_list}. Skipping...")
+#     return domainId_list
 
+# 检查要写入的内容是否已存在于文件中
+def is_output_in_log(log_file_path, output):
+
+    if not os.path.exists(log_file_path):
+        with open(log_file_path, 'a+', encoding='utf-8'):
+            pass
+
+    with open(log_file_path, 'r', encoding='utf-8') as log_file:
+        log_contents = log_file.read()
+        return output in log_contents
+    
 def Page_traversal_temporary(total, params, query_url, req_list):
     # 一页显示所有数据
     domainId_list = []
@@ -46,16 +58,22 @@ def Page_traversal_temporary(total, params, query_url, req_list):
     if unitName_list:
         for item in unitName_list:
             if item.get('domain') and item.get('unitName'):
-                output = f"unitName:{item['unitName']}\tdomainId:{item['domainId']}\tserviceLicence:{item['serviceLicence']}\tdomain:{item['domain']}"
-                print(output)
+                success_output = f"unitName:{item['unitName']}\tdomainId:{item['domainId']}\tmainLicence:{item['mainLicence']}\tserviceLicence:{item['serviceLicence']}\tdomain:{item['domain']}\tnatureName:{item['natureName']}\tupdateRecordTime:{item['updateRecordTime']}"
+                print(success_output)
+                
                 if item['domainId'] and item['domainId'] not in domainId_list:
+
                     domainId_list.append(item['domainId'])
-                    open('log/success.log', 'a+', encoding='utf-8').write(f"\n{output}")
+                    success_log_file_path = 'log/success.log'
+
+                    if not is_output_in_log(success_log_file_path, success_output):
+                        open(success_log_file_path, 'a+', encoding='utf-8').write(f"\n{success_output}")
             else:
                 print("unitName or domain is None...")
     else:
         print(f"No unitName_list found for {req_list}. Skipping...")
     return domainId_list
+
 def query_from(query_url, search_data, page_Num=1):
     params = {
         'search': search_data,
@@ -74,11 +92,23 @@ def query_from(query_url, search_data, page_Num=1):
         domain_list = Page_traversal_temporary(total, params, query_url, req_list)
 
         if total != len(domain_list):
-            print(f"\nunitName:{search_data}, messages:备案提取异常,已输出 error_icp.log , 需手工确认")
-            open('log/error_icp.log', 'a+', encoding='utf-8').write(f"{search_data} 应提取出 {total} 条信息，实际为 {len(domain_list)} 条\n")
+            print(f"\nsearch_data:{search_data}, messages:备案提取异常,已输出 error_icp.log , 需手工确认")
+
+            error_icp_output = f"{search_data} 应提取出 {total} 条信息，实际为 {len(domain_list)} 条"
+            error_icp_log_file_path = 'log/error_icp.log'
+
+            if not is_output_in_log(error_icp_log_file_path, error_icp_output):
+                open(error_icp_log_file_path, 'a+', encoding='utf-8').write(f'{error_icp_output}\n')
+
+        return total
     else:
         print(f"No req_list found for {search_data}. Skipping...")
-        open('log/no_req_list.log', 'a+', encoding='utf-8').write(f"{search_data}\n")
+        no_req_list_file_path = 'log/error_icp.log'
+
+        if not is_output_in_log(no_req_list_file_path, search_data):
+            open(no_req_list_file_path, 'a+', encoding='utf-8').write(f"{search_data}\n")
+
+        return None
 
 def query_from_file(query_url, filename, start_index):
     with open(filename, 'r', encoding='utf-8') as file:
@@ -93,10 +123,19 @@ def query_from_file(query_url, filename, start_index):
         
     for index in range(start_index-1, total_domains):
         data = data_list[index].strip()
+        
         if data:
-            print(f"\nProcessing Domain {index+1}/{total_domains}: {data}\n")
-            open('log/Processing_Domain.log', 'a+', encoding='utf-8').write(f"{index+1}/{total_domains}: {data}\n")
-            query_from(query_url, data)
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S:%f')
+            processing_Domain_output = f'Time: {current_time}, Schedule: {index+1}/{total_domains}, Domain: {data}'
+            print(f"\nProcessing {processing_Domain_output}\n")
+            
+            total = query_from(query_url, data)
+            if total is not None:
+                processing_Domain_output += f', Total: {total}'
+                processing_Domain_file_path = 'log/processing_Domain.log'
+
+                if not is_output_in_log(processing_Domain_file_path, processing_Domain_file_path):
+                    open(processing_Domain_file_path, 'a+', encoding='utf-8').write(f"{processing_Domain_output}\n")            
 
 if __name__ == '__main__':
     logo()
