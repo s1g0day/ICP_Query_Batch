@@ -1,8 +1,8 @@
 '''
 Author     : S1g0day
 Creat time : 2024/3/15 17:27
-Modification time: 2024/7/5 18:00
-Introduce  : 处理0.icq_query.py 的结果 success.log
+Modification time: 2024/8/8 14:00
+Introduce  : 处理0.icq_query.py 的结果 success.log,导出为xlsx
 '''
 
 import sys
@@ -29,7 +29,7 @@ with open(sys.argv[1], 'r', encoding='utf-8') as fileread:
                 task_dict[key] = value
 
             # 输出到Excel行
-            worksheet.append([task_dict['domainId'], task_dict['unitName'], task_dict['domain'], task_dict['serviceLicence']])
+            worksheet.append([task_dict['domainId'], task_dict['unitName'], task_dict['natureName'], task_dict['domain'], task_dict['mainLicence'], task_dict['serviceLicence'], task_dict['updateRecordTime']])
 
 # 保存Excel文件
 workbook.save('output.xlsx')
