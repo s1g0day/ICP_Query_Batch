@@ -134,7 +134,7 @@ def query_from_file(query_url, filename, start_index):
                 processing_Domain_output += f', Total: {total}'
                 processing_Domain_file_path = 'log/processing_Domain.log'
 
-                if not is_output_in_log(processing_Domain_file_path, processing_Domain_file_path):
+                if not is_output_in_log(processing_Domain_file_path, processing_Domain_output):
                     open(processing_Domain_file_path, 'a+', encoding='utf-8').write(f"{processing_Domain_output}\n")            
 
 if __name__ == '__main__':
