@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding=utf-8
+import os
 import time
 import json
 import random
@@ -34,6 +35,17 @@ def req_post(url, data=None, header=None):
         print("req_post error")
         pass
 
+# 检查要写入的内容是否已存在于文件中
+def is_output_in_log(log_file_path, output):
+
+    if not os.path.exists(log_file_path):
+        with open(log_file_path, 'a+', encoding='utf-8'):
+            pass
+
+    with open(log_file_path, 'r', encoding='utf-8') as log_file:
+        log_contents = log_file.read()
+        return output in log_contents
+    
 # 异常重试
 def make_request(urls, params, search_data):
     if isinstance(urls, str):
@@ -62,34 +74,36 @@ def make_request(urls, params, search_data):
                     if req.get('code') == 200:
                         success_sleep = random.randint(5, 15)
                         print(f"Query was successful. wait {success_sleep}s ...")
-                        time.sleep(success_sleep)  # 间隔重试
+                        # time.sleep(success_sleep)  # 间隔重试
                         return req
                     else:
                         print("Request failed. Retrying...")
                         if req.get('code') == 201:
-                            jsondumpdata = f"unitName:{search_data}, code:{req['code']}, msg:{req['error']}"
+                            jsondumpdata = f"search_data:{search_data}, code:{req['code']}, msg:{req['error']}"
                         else:
-                            jsondumpdata = f"unitName:{search_data}, code:{req['code']}, msg:{req['msg']}"
+                            jsondumpdata = f"search_data:{search_data}, code:{req['code']}, msg:{req['msg']}"
                         print(jsondumpdata)
-                        open('log/error.log', 'a+', encoding='utf-8').write(f"{jsondumpdata}\n")
-
+                        error_log_file_path = 'log/error.log'
+                        if not is_output_in_log(error_log_file_path, jsondumpdata):
+                            open(error_log_file_path, 'a+', encoding='utf-8').write(f"{jsondumpdata}\n")
                         if req.get('code') == 429:
                             error_sleep = random.randint(60, 120)  # 间隔重试
                             print(f"Frequency too high. Switching to next URL. wait {error_sleep}s ...")
-                            time.sleep(error_sleep)
+                            # time.sleep(error_sleep)
                             continue  # 跳出当前URL的循环
-                        # retries += 1
                 else:
                     error_sleep = random.randint(5, 15)  # 间隔重试
                     print(f"Request status_code is {response.status_code}. Retrying{error_sleep}s ...")
-                    open('log/error_status_code.log', 'a+', encoding='utf-8').write(f"{search_data}\n")
-                    time.sleep(error_sleep)
-                    # retries += 1
+                    error_status_code_log_file_path = 'log/error_status_code.log'
+                    if not is_output_in_log(error_status_code_log_file_path, search_data):
+                        open(error_status_code_log_file_path, 'a+', encoding='utf-8').write(f"{search_data}\n")
+                    # time.sleep(error_sleep)
             except Exception as e:
                 print("Exception occurred:", str(e))
-                time.sleep(random.randint(5, 10))  # 异常发生时等待一段时间再继续
-                # retries += 1
+                # time.sleep(random.randint(5, 10))  # 异常发生时等待一段时间再继续
         retries += 1
     print("Max retries exceeded. Failed to get successful response.")
-    open('log/error_Max.log', 'a+', encoding='utf-8').write(f"{search_data}\n")
+    error_Max_log_file_path = 'log/error_max.log'
+    if not is_output_in_log(error_Max_log_file_path, search_data):
+        open(error_Max_log_file_path, 'a+', encoding='utf-8').write(f"{search_data}\n")
     return None
