@@ -30,11 +30,11 @@ docker run -d -p 16181:16181 yiminger/ymicp:yolo8_latest
 │   ├── hander_random.py
 │   ├── logo.py
 ├── log
-│   ├── Processing_Domain.log
 │   ├── error.log
-│   ├── error_Max.log
+│   ├── error_max.log
 │   ├── error_status_code.log
 │   ├── no_req_list.log
+│   ├── processing_Domain.log
 │   └── success.log
 ```
 
@@ -138,7 +138,7 @@ python3 0.icp_query.py -d http://192.168.1.1:16181
 python3 0.icp_query.py -d http://192.168.1.1:16181 -u baidu.com
 python3 0.icp_query.py -d http://192.168.1.1:16181 -uf conf/domain.txt
 
-# 5、断点继续，以上4点都可以使用。假设Processin日志为："4/10: 浙江淘宝网络有限公司"，想从第4个继续，命令如下
+# 5、断点继续，以上4点都可以使用。假设 processing_Domain 日志为："4/10: 浙江淘宝网络有限公司"，想从第4个继续，命令如下
 python3 0.icp_query.py -s 4
 ```
 
@@ -146,12 +146,12 @@ python3 0.icp_query.py -s 4
 
 ```
 .
-├── Processing_Domain.log		# 进度日志，如果Ctrl+c中断的话，可以从这里看到定义起始位置
 ├── error.log					# 报错日志，代码初期调试用的(可忽略)
-├── error_Max.log				# 关键日志, 代码中对domains中的每行数据最多遍历10次，如果10次都查询错误，会写入到这个日志，方便对其重新测试
+├── error_max.log				# 关键日志, 代码中对domains中的每行数据最多遍历10次，如果10次都查询错误，会写入到这个日志，方便对其重新测试
 ├── error_status_code.log		# 报错日志, 测试平台地址请求失败日志(可忽略)，通过error_Max.log查询失败的记录
 ├── error_icp.log         		# 查询异常日志，主要是记录总量与实际数据不符的问题
 ├── no_req_list.log				# 关键日志，存储了查询正常但没有数据回显的情况，需要注意是否是domians信息填错，如公司名称为简写等
+├── processing_Domain.log		# 进度日志，如果Ctrl+c中断的话，可以从这里看到定义起始位置
 └── success.log					# 关键日志, 查询成功且获取到所有备案域名信息
 ```
 
@@ -162,31 +162,23 @@ python3 0.icp_query.py -s 4
 ```
 # 提取出域名
 [root@localhost icp_query_s1g0day]# python3 1.icp_query_result_processor.py log/success.log 
-yjs-cdn1.com
-yjs-cdn3.com
-yunjiasu-dns.com
-yunjiasupreview.com
-videomind.cloud
-baidussl.cloud
-jomoxc.com
-apkprotect17.cn
-hmpsvr.com
-duapp.com
-jiyoujia.com
-xiami.net
-taobao.cn
-yitao.com
-mpmw.com
-tao123.com
-kanbox.com
-meipingmeiwu.com
-etao.com
-homearch.store
 
+# 导出为xlsx文件
 # 将域名保存到 1.txt
 # 运行代码，结果保存到log目录下。这个代码的妙用还请亲身体验
 [root@localhost icp_query_s1g0day]# python3 2.quchong.py 1.txt
 ```
+
+`quchong.py`日志
+
+```
+.
+├── _output_ascii_domain.txt	# 筛选出所有中文域名并将其转为ascii的结果
+├── _output_ips.txt				# 筛选出所有IP并将其排序后的结果
+└── _output_all.txt				# 所有域名及IP结果，其中中文域名及转换结果已打印在输出行，并未写入当前日志
+```
+
+也可以使用 [data_processor](https://github.com/s1g0day/data_processor) 进行数据处理
 
 # Lssuse
 
@@ -215,21 +207,40 @@ homearch.store
 
 ```
 def parse_config(array: list):
-	'''其他代码'''
-	trojan = []
-    # { name: 香港02, type: trojan, server: xxx.xxx.cn, port: 50002, password: e9fa580, udp: true, sni: xxxx-cert.com, skip-cert-verify: true }
-	'''其他代码'''
-        elif node['type'] == 'trojan':
-            node = f"{node['type']}://{node['password']}@{node['server']}:{node['port']}?serverName={node['sni']}&skipVerify={node['skip-cert-verify']}#{node['name']}"
-            trojan.append(node)
-	'''其他代码'''
+    ss = []
+    # {'name': '泰国', 'type': 'ss', 'server': 'xxx.cn', 'port': 123, 'cipher': 'chacha20-ietf-poly1305', 'password': 'password', 'udp': True}
+    vmess = []
+    # { name: '香港', type: vmess, server: 'xxx.cn', port: 123, uuid: ac005860, alterId: 0, cipher: auto, udp: true }
+    trojan = []
+    # { name: '[trojan] 香港 01', type: trojan, server: ixxx.xxx.cn, port: 50002, password: xxxxx, udp: true, skip-cert-verify: true }
+    # { name: 香港02, type: trojan, server: xxx.xxx.cn, port: 50002, password: xxxxx, udp: true, sni: xxxx-cert.com, skip-cert-verify: true }
+
+    keywords = ['最新', '流量', '重置', '到期']
+    for node in array:
+        if any(keyword in node['name'] for keyword in keywords):
+            pass
+        else:
+            if node['type'] == 'ss':
+                node = f"{node['type']}://{node['cipher']}:{node['password']}@{node['server']}:{node['port']}#{node['name']}"
+                ss.append(node)
+            elif node['type'] == 'vmess':
+                node = f"{node['type']}://none:{node['uuid']}@{node['server']}:{node['port']}?alterID={node['alterId']}"
+                vmess.append(node)
+            elif node['type'] == 'trojan':
+                if 'sni'in node:
+                    node = f"{node['type']}://{node['password']}@{node['server']}:{node['port']}?serverName={node['sni']}&skipVerify={node['skip-cert-verify']}#{node['name']}"
+                else:
+                    node = f"{node['type']}://{node['password']}@{node['server']}:{node['port']}?skipVerify={node['skip-cert-verify']}#{node['name']}"
+                trojan.append(node)
+    for node in ss:
+        print(f'forward={node}')
+    for node in vmess:
+        print(f'forward={node}')
     for node in trojan:
         print(f'forward={node}')
 ```
 
-修改原本`ymicp-socks.py`代码，后续详情阅读 `icpApi/readme.md`
-
-> 注: 此次方案可以仅单机部署，不在需要负载多节点的方式
+根据实际情况修改原本`ymicp-socks.py`代码，后续详情阅读 `icpApi/readme.md`
 
 ---
 
