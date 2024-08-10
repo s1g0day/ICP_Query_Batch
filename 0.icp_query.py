@@ -1,28 +1,17 @@
 '''
 Author     : S1g0day
 Creat time : 2024/3/15 17:27
-Modification time: 2024/8/9 10:30
+Modification time: 2024/8/10 14:48
 Introduce  : 通过接口查询域名或公司备案
 '''
-import os
 import yaml
-from lib.logo import logo
 from datetime import datetime
-from lib.Requests_func import make_request
 from argparse import ArgumentParser
+from lib.logo import logo
+from lib.Requests_func import make_request
+from lib.log_functions import is_output_in_log, write_log_success, write_log_error, write_log_warning
 
-# 检查要写入的内容是否已存在于文件中
-def is_output_in_log(log_file_path, output):
-
-    if not os.path.exists(log_file_path):
-        with open(log_file_path, 'a+', encoding='utf-8'):
-            pass
-
-    with open(log_file_path, 'r', encoding='utf-8') as log_file:
-        log_contents = log_file.read()
-        return output in log_contents
-    
-def Page_traversal_temporary(total, params, query_url, req_list):
+def Page_traversal_temporary(id, total, params, query_url, req_list):
     # 一页显示所有数据
     domainId_list = []
     params['pageSize'] = total
@@ -32,55 +21,57 @@ def Page_traversal_temporary(total, params, query_url, req_list):
         unitName_list = req_page_unitName['params']['list']
         for item in unitName_list:
             if item.get('domain') and item.get('unitName'):
-                success_output = f"domainId:{item['domainId']}\tunitName:{item['unitName']}\tnatureName:{item['natureName']}\tdomain:{item['domain']}\tmainLicence:{item['mainLicence']}\tserviceLicence:{item['serviceLicence']}\tupdateRecordTime:{item['updateRecordTime']}"
-                print(success_output)
+                success_output = f"id:{id}\tdomainId:{item['domainId']}\tunitName:{item['unitName']}\tnatureName:{item['natureName']}\tdomain:{item['domain']}\tmainLicence:{item['mainLicence']}\tserviceLicence:{item['serviceLicence']}\tupdateRecordTime:{item['updateRecordTime']}"
                 
                 if item['domainId'] and item['domainId'] not in domainId_list:
 
                     domainId_list.append(item['domainId'])
                     success_log_file_path = 'log/success.log'
-
-                    if not is_output_in_log(success_log_file_path, success_output):
-                        open(success_log_file_path, 'a+', encoding='utf-8').write(f"\n{success_output}")
+                    write_log_success(success_log_file_path, success_output)
             else:
-                print("unitName or domain is None...")
+                write_log_warning("unitName or domain is None...")
     else:
-        print(f"No unitName_list found for {req_list}. Skipping...")
+        write_log_warning(f"No unitName_list found for {req_list}. Skipping...")
     return domainId_list
 
-def query_from(query_url, search_data, page_Num=1):
+def query_from(query_url, search_data, id):
+
     params = {
         'search': search_data,
-        'pageNum': page_Num,
-        'pageSize': '10',
+        'pageNum': 1,
+        'pageSize': 10,
     }
+
     req = make_request(query_url, params, search_data)
-    if req:
-        req_list = req['params']['list']
-        params['search'] = req_list[0]['unitName']
-        req_unitName = make_request(query_url, params, params['search'])
-        if req_unitName:
-            total = req_unitName['params']['total']
-            domain_list = Page_traversal_temporary(total, params, query_url, req_list)
+    
+    # 检查req是否为字典类型或是否包含所需的键
+    if req and isinstance(req, dict) and 'params' in req:
+        try:
+            req_list = req['params']['list']
+            if req_list and isinstance(req_list, list) and len(req_list) > 0:
+                params['search'] = req_list[0]['unitName']
+                req_unitName = make_request(query_url, params, params['search'])
+                if req_unitName and isinstance(req_unitName, dict) and 'params' in req_unitName:
+                    total = req_unitName['params']['total']
+                    domain_list = Page_traversal_temporary(id, total, params, query_url, req_list)
 
-            if total != len(domain_list):
-                print(f"\nsearch_data:{search_data}, messages:备案提取异常,已输出 error_icp.log , 需手工确认")
+                    if domain_list and isinstance(domain_list, list) and total != len(domain_list):
+                        error_icp_output = f"{search_data} 应提取出 {total} 条信息，实际为 {len(domain_list)} 条"
+                        error_icp_log_file_path = 'log/error_icp.log'
+                        write_log_error(error_icp_log_file_path, error_icp_output)
+                    return total
 
-                error_icp_output = f"{search_data} 应提取出 {total} 条信息，实际为 {len(domain_list)} 条"
-                error_icp_log_file_path = 'log/error_icp.log'
+        except Exception as e:
+            error_occurred_output = f"{search_data} an error occurred: {str(e)}"
+            error_occurred_log_file_path = 'log/error_occurred.log'
+            write_log_error(error_occurred_log_file_path, error_occurred_output, search_data)
+    
+    no_req_list_output = f"Does not have req_list: {search_data}"
+    no_req_list_log_file_path = 'log/no_req_list.log'
+    write_log_error(no_req_list_log_file_path, no_req_list_output, search_data)
 
-                if not is_output_in_log(error_icp_log_file_path, error_icp_output):
-                    open(error_icp_log_file_path, 'a+', encoding='utf-8').write(f'{error_icp_output}\n')
-
-            return total
-    else:
-        print(f"No req_list found for {search_data}. Skipping...")
-        no_req_list_file_path = 'log/no_req_list.log'
-
-        if not is_output_in_log(no_req_list_file_path, search_data):
-            open(no_req_list_file_path, 'a+', encoding='utf-8').write(f"{search_data}\n")
-
-        return None
+    # 根据您的需求，如果if条件不满足，最多重新运行10次
+    return None
 
 def query_from_file(query_url, filename, start_index):
     with open(filename, 'r', encoding='utf-8') as file:
@@ -88,26 +79,25 @@ def query_from_file(query_url, filename, start_index):
         total_domains = len(data_list)
     if start_index < 1:
         start_index = 1
-        print("输入异常, start_index 重置为 1")
+        write_log_warning("输入异常, start_index 重置为 1")
     elif start_index > total_domains:
         start_index = total_domains
-        print(f"输入异常, start_index 重置为 {total_domains}")
+        write_log_warning(f"输入异常, start_index 重置为 {total_domains}")
         
     for index in range(start_index-1, total_domains):
         data = data_list[index].strip()
         
         if data:
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S:%f')
-            processing_Domain_output = f'Time: {current_time}, Schedule: {index+1}/{total_domains}, Domain: {data}'
-            print(f"\nProcessing {processing_Domain_output}\n")
-            
-            total = query_from(query_url, data)
+            Processing_Domain_output = f'Time: {current_time}, Schedule: {index+1}/{total_domains}, Domain: {data}'
+            print("\n")
+            write_log_warning(f"Processing {Processing_Domain_output}")
+            print("\n")
+            total = query_from(query_url, data, index+1)
             if total is not None:
-                processing_Domain_output += f', Total: {total}'
-                processing_Domain_file_path = 'log/processing_Domain.log'
-
-                if not is_output_in_log(processing_Domain_file_path, processing_Domain_output):
-                    open(processing_Domain_file_path, 'a+', encoding='utf-8').write(f"{processing_Domain_output}\n")            
+                Processing_Domain_output += f', Total: {total}'
+                Processing_Domain_log_file_path = 'log/processing_Domain.log'
+                write_log_success(Processing_Domain_log_file_path, Processing_Domain_output)       
 
 if __name__ == '__main__':
     logo()
@@ -124,21 +114,25 @@ if __name__ == '__main__':
     if args.query_url:
         if args.domain:
             # 执行查询
-            query_from(args.query_url, args.domain)
+            query_from(args.query_url, args.domain, args.start_index)
         elif args.domains_file:
-            print(f"Query_urls: {args.query_url}\nDomains_file: {args.domains_file}")
+            write_log_warning(f"Query_urls: {args.query_url}")
+            write_log_warning(f"Domains_file: {args.domains_file}")
             query_from_file(args.query_url, args.domains_file, args.start_index)
         else:
-            print(f"Query_urls: {args.query_url}\nDomains_file: {push_config['domains_file']}")
+            write_log_warning(f"Query_urls: {args.query_url}")
+            write_log_warning(f"Domains_file: {push_config['domains_file']}")
             query_from_file(args.query_url, push_config['domains_file'], args.start_index)
             
     else:
         if args.domain:
             # 执行查询
-            query_from(push_config['query_url'], args.domain)
+            query_from(push_config['query_url'], args.domain, args.start_index)
         elif args.domains_file:
-            print(f"Query_urls: {push_config['query_url']}\nDomains_file: {args.domains_file}")
+            write_log_warning(f"Query_urls: {push_config['query_url']}")
+            write_log_warning(f"Domains_file: {args.domains_file}")
             query_from_file(push_config['query_url'], args.domains_file, args.start_index)
         else:
-            print(f"Query_urls: {push_config['query_url']}\nDomains_file: {push_config['domains_file']}")
+            write_log_warning(f"Query_urls: {push_config['query_url']}")
+            write_log_warning(f"Domains_file: {push_config['domains_file']}")
             query_from_file(push_config['query_url'], push_config['domains_file'], args.start_index)
