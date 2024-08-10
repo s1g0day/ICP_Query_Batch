@@ -24,7 +24,7 @@ with open(sys.argv[1], 'r', encoding='utf-8') as fileread:
             # 遍历任务信息部分
             for part in task_parts:
                 # 分割键值对
-                key, value = part.split(':')
+                key, value = part.split(':', 1)
                 # 添加到字典
                 task_dict[key] = value
 
