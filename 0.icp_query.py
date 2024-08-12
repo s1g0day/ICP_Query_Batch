@@ -9,7 +9,7 @@ from datetime import datetime
 from argparse import ArgumentParser
 from lib.logo import logo
 from lib.Requests_func import make_request
-from lib.log_functions import is_output_in_log, write_log_success, write_log_error, write_log_warning
+from lib.log_functions import write_log_success, write_log_error, write_log_warning
 
 def Page_traversal_temporary(id, total, params, query_url, req_list):
     # 一页显示所有数据
