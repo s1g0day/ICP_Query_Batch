@@ -1,11 +1,8 @@
 '''
-author     : Yiming
-Creat time : 2023/9/8 16:53
-modification time: 2024/2/21 14:52
-Blog       : https://www.cnblogs.com/ymer
-Github     : https://github.com/HG-ha
-Home       : https://api.wer.plus
-QQ group   : 376957298,1029212047
+author     : s1g0day
+Creat time : 2024/2/21 14:52
+modification time: 2024/8/12 14:58
+Remark     : 设置本地代理池
 '''
 
 import asyncio
@@ -72,7 +69,7 @@ class beian():
         return random_filename
     
     async def _init_session(self):
-        self.session = aiohttp.ClientSession(connector=SocksConnector.from_url('socks5://127.0.0.1:7890'))
+        self.session = aiohttp.ClientSession(connector=SocksConnector.from_url('socks5://127.0.0.1:8443'))
     
     async def _close_session(self):
         if self.session is not None:

@@ -1,4 +1,4 @@
-version: "v0.0.6"
+version: "v0.0.7"
 
 # 测试平台地址
 query_url:

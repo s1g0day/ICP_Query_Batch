@@ -1,11 +1,8 @@
 '''
-author     : Yiming
-Creat time : 2023/9/8 16:53
-modification time: 2024/2/21 14:52
-Blog       : https://www.cnblogs.com/ymer
-Github     : https://github.com/HG-ha
-Home       : https://api.wer.plus
-QQ group   : 376957298,1029212047
+author     : s1g0day
+Creat time : 2024/2/21 14:52
+modification time: 2024/8/12 14:58
+Remark     : 设置快代理
 '''
 
 import asyncio
@@ -18,6 +15,7 @@ import base64
 import numpy as np
 import ujson
 import random
+import datetime
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 import string
@@ -177,6 +175,28 @@ class beian():
         isma = cv2.cvtColor(isma, cv2.COLOR_BGRA2BGR)
         ibig = cv2.imdecode(np.frombuffer(base64.b64decode(big_image),np.uint8), cv2.COLOR_GRAY2RGB)
         data = self.det.check_target(ibig,isma)
+
+        # 生成时间戳
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        
+        # 创建保存图像的目录
+        output_dir = "output"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        isma_dir = os.path.join(output_dir, "isma")
+        if not os.path.exists(isma_dir):
+            os.makedirs(isma_dir)
+        ibig_dir = os.path.join(output_dir, "ibig")
+        if not os.path.exists(ibig_dir):
+            os.makedirs(ibig_dir)
+        
+        # 保存图像
+        isma_filename = f"{timestamp}_small.jpg"
+        isma_filepath = os.path.join(isma_dir, isma_filename)
+        cv2.imwrite(isma_filepath, isma)  # 保存带时间戳的小图像
+        ibig_filename = f"{timestamp}_big.jpg"
+        ibig_filepath = os.path.join(ibig_dir, ibig_filename)
+        cv2.imwrite(ibig_filepath, ibig)  # 保存带时间戳的大图像
         return data
         
 

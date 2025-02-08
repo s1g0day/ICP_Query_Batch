@@ -1,4 +1,4 @@
-
+## 1、添加socks代理
 
 **安装`aiohttp_socks`**： 首先，确保你已经安装了`aiohttp_socks`库。如果没有安装，可以通过以下命令安装：   
 
@@ -9,11 +9,11 @@ pip install aiohttp_socks
 **修改`_init_session`方法**： 在`beian`类的`_init_session`方法中，你需要设置代理。这里假设你使用的是Socks5代理，并且代理的地址是`127.0.0.1`，端口是`7890`。   修改后的`_init_session`方法如下：
 
 ````
-cp ymicp.py ymicp_socks_proxy.py
-vi ymicp_socks_proxy.py
+cp ymicp.py ymicp_socks_v2.py
+vi ymicp_socks_v2.py
 ````
 
-`ymicp_socks_proxy.py`
+`ymicp_socks_v2.py`
 
 ```
 from aiohttp_socks import SocksConnector
@@ -25,7 +25,7 @@ async def _init_session(self):
 **测试代码**： 确保你的代理设置正确，并且代理服务器正在运行。你可以通过运行你的代码来测试代理是否生效。
 
 ```
-root@b5158010562d:/icpApi_20240221_yolo8# python3 ymicp_socks_proxy.py 
+root@b5158010562d:/icpApi_20240221_yolo8# python3 ymicp_socks_v2.py 
 Loading weights into state dict...
 model_data/best_epoch_weights.pth model loaded.
 Configurations:
@@ -37,7 +37,7 @@ Configurations:
 |          letterbox_image |                                    False|
 |                     cuda |                                    False|
 ----------------------------------------------------------------------
-ymicp_socks_proxy.py:75: DeprecationWarning: SocksConnector is deprecated. Use ProxyConnector instead.
+ymicp_socks_v2.py:75: DeprecationWarning: SocksConnector is deprecated. Use ProxyConnector instead.
   self.session = aiohttp.ClientSession(connector=SocksConnector.from_url('socks5://127.0.0.1:8443'))
 Loading model_data/best.onnx for ONNX Runtime inference...
 
@@ -73,3 +73,40 @@ from ymicp_socks_proxy import beian
 
 我的程序运行在ymicp docker环境内，所有无所谓端口是多少，也不需要映射到宿主机
 
+## 2、添加header认证
+
+```
+async def options_middleware(app, handler):
+    async def middleware(request):
+        # 验证header
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or auth_header != 'Bearer your-secret-token':
+            api_logger.warning(f"未授权访问: {request.remote} - {request.path}")
+            return wj({'code': 404, "msg": "Unauthorized"}, status=404, headers=corscode)
+
+        # 处理 OPTIONS 请求
+        if request.method == 'OPTIONS':
+            api_logger.info(f"OPTIONS请求: {request.remote} - {request.path}")
+            return wj(headers=corscode)
+        
+        try:
+            response = await handler(request)
+            response.headers.update(corscode)
+            if response.status == 200:
+                api_logger.log_request(request, 200, "请求成功")
+                return response
+        except web.HTTPException as ex:
+            api_logger.error(f"请求异常: {request.remote} - {request.path} - {ex.status} - {ex.reason}")
+            if ex.status == 404:
+                return wj({'code': ex.status,"msg":"查询请访问http://0.0.0.0:16181/query/{name}"},headers=corscode)
+            return wj({'code': ex.status,"msg":ex.reason},headers=corscode)
+        
+        return response
+    return middleware
+```
+
+## 3、添加日志系统
+
+`logger.py`
+
+`ip_analyzer.py`

@@ -3,32 +3,27 @@
 import time
 import json
 import random
-import logging
 import requests
 from lib.hander_random import requests_headers
-from lib.log_functions import write_log_error, write_log_warning
+from lib.log_functions import api_logger
 
-# 配置日志记录器
-logging.basicConfig(filename='log/application.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# 创建日志记录器
-logger = logging.getLogger(__name__)
 
 headers = requests_headers()
 
 def req_get(url, params):
 
-    proxies = {
-        # 用sock协议时只能用socks5h 不能用socks5,或者用http协议
-        'http':'socks5h://192.168.88.21:8443',
-        'https':'socks5h://192.168.88.21:8443'
-    }
+    # proxies = {
+    #     # 用sock协议时只能用socks5h 不能用socks5,或者用http协议
+    #     'http':'socks5h://127.0.0.1:8443',
+    #     'https':'socks5h://127.0.0.1:8443'
+    # }
     try:
-        res = requests.get(url=url, headers=headers, params=params, verify=False, proxies=proxies)
+        res = requests.get(url=url, headers=headers, params=params, verify=False)
+        # res = requests.get(url=url, headers=headers, params=params, verify=False, proxies=proxies)
         res.encoding = res.apparent_encoding # apparent_encoding比"utf-8"错误率更低
         return res
     except:
-        write_log_warning("req_get error")
+        api_logger.warning(f"req_get error: {str(e)}")
         pass
 
 def req_post(url, data=None, header=None):
@@ -39,7 +34,7 @@ def req_post(url, data=None, header=None):
         res.encoding = res.apparent_encoding # apparent_encoding比"utf-8"错误率更低
         return res
     except:
-        write_log_warning("req_post error")
+        api_logger.warning(f"req_post error: {str(e)}")
         pass
     
 # 异常重试
@@ -54,7 +49,7 @@ def make_request(urls, params, search_data):
     while retries < max_retries:
         for url in urls:
             url = url.strip()
-            write_log_warning(f"Query url: {url}")
+            api_logger.warning(f"Query url: {url}")
             try:
                 response = requests.get(url +'/query/web', params=params, headers=headers, allow_redirects=False)
                 response.encoding = response.apparent_encoding # apparent_encoding比"utf-8"错误率更低
@@ -69,34 +64,34 @@ def make_request(urls, params, search_data):
                     req = json.loads(response.text)
                     if req.get('code') == 200:
                         success_sleep = random.randint(5, 15)
-                        write_log_warning(f"Query was successful. wait {success_sleep}s ...")
+                        api_logger.warning(f"Query was successful. wait {success_sleep}s ...")
                         time.sleep(success_sleep)  # 间隔重试
                         return req
                     else:
-                        write_log_warning("Request failed. Retrying...")
+                        api_logger.warning("Request failed. Retrying...")
                         if req.get('code') == 201:
                             jsondumpdata = f"search_data:{search_data}, code:{req['code']}, msg:{req['error']}"
                         else:
                             jsondumpdata = f"search_data:{search_data}, code:{req['code']}, msg:{req['msg']}"
-                        write_log_warning(jsondumpdata)
+                        api_logger.warning(jsondumpdata)
 
                         if req.get('code') == 429:
-                            error_sleep = random.randint(60, 120)  # 间隔重试
-                            write_log_warning(f"Frequency too high. Switching to next URL. wait {error_sleep}s ...")
+                            error_sleep = random.randint(60, 120)
+                            api_logger.warning(f"Frequency too high. Switching to next URL. wait {error_sleep}s ...")
                             time.sleep(error_sleep)
                             continue  # 跳出当前URL的循环
                 else:
                     error_sleep = random.randint(5, 15)  # 间隔重试
-                    error_status_code_output = f"Request status_code is {response.status_code}. Retrying{error_sleep}s ..."
-                    error_status_code_log_file_path = 'log/error_status_code.log'
-                    write_log_error(error_status_code_log_file_path, error_status_code_output, search_data)
+                    error_msg = f"Request status_code is {response.status_code}. Retrying {error_sleep}s ..."
+                    # api_logger.error(error_msg, extra={'search_data': search_data})
+                    api_logger.write_log_error('log/error_status_code.log', error_msg, search_data)
                     time.sleep(error_sleep)
             except Exception as e:
-                write_log_warning(f"Exception occurred: {str(e)}")
+                api_logger.warning(f"Exception occurred: {str(e)}")
                 time.sleep(random.randint(5, 10))  # 异常发生时等待一段时间再继续
         retries += 1
-    error_max_output = f"{search_data} Max retries exceeded. Failed to get successful response."
-    error_max_log_file_path = 'log/error_max.log'
-    write_log_error(error_max_log_file_path, error_max_output, search_data)
+    error_max_msg = f"{search_data} Max retries exceeded. Failed to get successful response."
+    # api_logger.error(error_max_msg)
+    api_logger.write_log_error('log/error_max.log', error_max_msg, search_data)
 
     return None

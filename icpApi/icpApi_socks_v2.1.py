@@ -1,16 +1,16 @@
 '''
-author     : Yiming
-Creat time : 2023/9/9 21:03
-Blog       : https://www.cnblogs.com/ymer
-Github     : https://github.com/HG-ha
-Home       : https://api.wer.plus
-QQ group   : 376957298,1029212047
+author     : s1g0day
+Creat time : 2024/2/21 14:52
+modification time: 2025/2/8 14:30
+Remark     : 指定socks文件，无认证，配置日志系统
 '''
 
 from functools import wraps
 from aiohttp import web
 import json
-from ymicp_socks_proxy import beian
+from ymicp_socks import beian
+from logger import api_logger
+from ip_analyzer import ip_analyzer
 
 # 跨域参数
 corscode = {
@@ -41,17 +41,22 @@ wj = lambda *args,**kwargs: web.json_response(*args,**kwargs)
 @jsondump
 async def options_middleware(app, handler):
     async def middleware(request):
-        # 处理 OPTIONS 请求，直接返回空数据和允许跨域的 header
+        # 记录IP访问
+        ip_analyzer.record_ip(request.remote)
+
+        # 处理 OPTIONS 请求
         if request.method == 'OPTIONS':
+            api_logger.info(f"OPTIONS请求: {request.remote} - {request.path}")
             return wj(headers=corscode)
         
-        # 继续处理其他请求,同时处理异常响应，返回正常json值或自定义页面
         try:
             response = await handler(request)
             response.headers.update(corscode)
             if response.status == 200:
+                api_logger.log_request(request, 200, "请求成功")
                 return response
         except web.HTTPException as ex:
+            api_logger.error(f"请求异常: {request.remote} - {request.path} - {ex.status} - {ex.reason}")
             if ex.status == 404:
                 return wj({'code': ex.status,"msg":"查询请访问http://0.0.0.0:16181/query/{name}"},headers=corscode)
             return wj({'code': ex.status,"msg":ex.reason},headers=corscode)
@@ -59,6 +64,50 @@ async def options_middleware(app, handler):
         return response
     return middleware
 
+# 添加新的路由处理IP统计
+@routes.get('/ip_stats')
+@jsondump
+async def get_ip_stats(request):
+    """获取IP访问统计信息"""
+    try:
+        # 获取查询参数
+        top_n = request.query.get('top', None)
+        if top_n:
+            try:
+                top_n = int(top_n)
+            except ValueError:
+                return wj({'code': 400, 'msg': 'Invalid top parameter'}, status=400, headers=corscode)
+        
+        # 获取统计信息
+        stats = ip_analyzer.get_formatted_stats(top_n=top_n)
+        return wj({
+            'code': 200,
+            'msg': 'success',
+            'data': stats
+        }, headers=corscode)
+    except Exception as e:
+        api_logger.error(f"获取IP统计失败: {str(e)}")
+        return wj({'code': 500, 'msg': 'Internal server error'}, status=500, headers=corscode)
+
+@routes.get('/ip_stats/clear')
+@jsondump
+async def clear_ip_stats(request):
+    """清除IP统计数据"""
+    try:
+        if ip_analyzer.clear_stats():
+            return wj({
+                'code': 200,
+                'msg': 'IP statistics cleared successfully'
+            }, headers=corscode)
+        else:
+            return wj({
+                'code': 500,
+                'msg': 'Failed to clear IP statistics'
+            }, status=500, headers=corscode)
+    except Exception as e:
+        api_logger.error(f"清除IP统计失败: {str(e)}")
+        return wj({'code': 500, 'msg': 'Internal server error'}, status=500, headers=corscode)
+    
 @jsondump
 @routes.view(r'/query/{path}')
 async def geturl(request):
