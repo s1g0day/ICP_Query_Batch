@@ -22,7 +22,7 @@ def req_get(url, params):
         # res = requests.get(url=url, headers=headers, params=params, verify=False, proxies=proxies)
         res.encoding = res.apparent_encoding # apparent_encoding比"utf-8"错误率更低
         return res
-    except:
+    except Exception as e:
         api_logger.warning(f"req_get error: {str(e)}")
         pass
 
@@ -33,7 +33,7 @@ def req_post(url, data=None, header=None):
         res = requests.post(url=url, headers=headers, verify=False, data=data, allow_redirects=False, timeout=(4,20))
         res.encoding = res.apparent_encoding # apparent_encoding比"utf-8"错误率更低
         return res
-    except:
+    except Exception as e:
         api_logger.warning(f"req_post error: {str(e)}")
         pass
     
