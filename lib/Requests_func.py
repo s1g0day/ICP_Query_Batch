@@ -4,10 +4,11 @@ import time
 import json
 import random
 import requests
+import urllib3
 from lib.hander_random import requests_headers
 from lib.log_functions import api_logger
 
-
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 headers = requests_headers()
 
 def req_get(url, params):
