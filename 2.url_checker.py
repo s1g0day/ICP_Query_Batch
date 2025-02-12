@@ -16,7 +16,7 @@ def export_available_url(url):
     导出可用URL到文件
     :param url: 要导出的URL
     """
-    filename = 'log/available_urls.txt'
+    filename = 'log/available_urls.log'
     try:
         # 检查文件是否已存在并包含该URL
         if os.path.exists(filename):
