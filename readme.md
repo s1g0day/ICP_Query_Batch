@@ -21,7 +21,7 @@ docker run -d -p 16181:16181 yiminger/ymicp:yolo8_latest
 .
 ├── 0.icp_query.py
 ├── 1.icp_query_result_processor.py
-├── 2.quchong.py
+├── 2.url_checker.py
 ├── config
 │   ├── config.yaml
 │   └── domain.txt
@@ -29,12 +29,17 @@ docker run -d -p 16181:16181 yiminger/ymicp:yolo8_latest
 │   ├── Requests_func.py
 │   ├── hander_random.py
 │   ├── logo.py
+│   ├── log_functions.py
 ├── log
-│   ├── error.log
-│   ├── error_max.log
-│   ├── error_status_code.log
-│   ├── no_req_list.log
-│   ├── processing_Domain.log
+
+│   └── application.log
+│   └── available_urls.log
+│   └── error_max.log
+│   └── error_occurred.log
+│   └── error_status_code.log
+│   └── error_icp.log
+│   └── no_req_list.log
+│   └── processing_Domain.log
 │   └── success.log
 ```
 
@@ -43,7 +48,7 @@ docker run -d -p 16181:16181 yiminger/ymicp:yolo8_latest
  `config.yaml`  
 
 ```
-version: "0.0.1"
+version: "0.0.7"
 
 # 测试平台地址
 query_url:
@@ -53,6 +58,12 @@ query_url:
   
 # 目标文件
 domains_file: "config/domain.txt"
+```
+
+检测query_url可用性，可用url输出到logs目录`available_urls.log`
+
+```
+python3 2.url_checker.py
 ```
 
 测试平台地址使用的是多个服务器搭建组成负载均衡的效果。为什么用多个服务器搭建？
@@ -146,7 +157,8 @@ python3 0.icp_query.py -s 4
 
 ```
 .
-├── application.log					# 运行日志，代码初期调试用的(可忽略)
+├── application.log				# 运行日志，代码初期调试用的(可忽略)
+├── available_urls.log			# 可用平台地址列表
 ├── error_max.log				# 关键日志(需重新测试), 代码中对domains中的每行数据最多遍历10次，如果10次都查询错误，会写入到这个日志，方便对其重新测试
 ├── error_occurred.log			# 关键日志(需重新测试)，查询异常，原因需要通过debug查看
 ├── error_status_code.log		# 报错日志, 测试平台地址请求失败日志(可忽略)，通过error_Max.log查询失败的记录
