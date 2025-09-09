@@ -4,13 +4,13 @@
 
 # 搭建
 
-不折腾了，直接docker部署 20240225版本
+不折腾了，直接docker部署 20250906版本
 
 ```
 # 拉取镜像
-docker pull yiminger/ymicp:yolo8_latest
+docker pull yiminger/ymicp
 # 运行并转发容器16181端口到本地所有地址
-docker run -d -p 16181:16181 yiminger/ymicp:yolo8_latest
+docker run -d -p 16181:16181 yiminger/ymicp
 ```
 
 # 项目
