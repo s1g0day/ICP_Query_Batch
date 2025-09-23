@@ -1,7 +1,7 @@
 '''
 Author     : S1g0day
 Creat time : 2024/3/15 17:27
-Modification time: 2025/2/8 15:00
+Modification time: 2025/9/23 17:00
 Introduce  : 通过接口查询域名或公司备案
 '''
 import yaml
@@ -12,25 +12,31 @@ from lib.Requests_func import make_request
 from lib.log_functions import api_logger
 
 def Page_traversal_temporary(id, total, params, query_url, req_list):
-    # 一页显示所有数据
+    # 分页获取所有数据，解决单页数量限制问题
     domainId_list = []
-    params['pageSize'] = total
-    req_page_unitName = make_request(query_url, params, req_list[0]['unitName'])
-
-    if req_page_unitName:
-        unitName_list = req_page_unitName['params']['list']
-        for item in unitName_list:
-            if item.get('domain') and item.get('unitName'):
-                success_output = f"id:{id}\tdomainId:{item['domainId']}\tunitName:{item['unitName']}\tnatureName:{item['natureName']}\tdomain:{item['domain']}\tmainLicence:{item['mainLicence']}\tserviceLicence:{item['serviceLicence']}\tupdateRecordTime:{item['updateRecordTime']}"
-                
-                if item['domainId'] and item['domainId'] not in domainId_list:
-
-                    domainId_list.append(item['domainId'])
-                    api_logger.success(success_output)
-            else:
-                api_logger.warning("unitName or domain is None...")
-    else:
-        api_logger.warning(f"No unitName_list found for {req_list}. Skipping...")
+    page_size = 40  # 假设接口最大支持40条/页，如有不同请调整
+    total_pages = (total + page_size - 1) // page_size
+    for page in range(1, total_pages + 1):
+        params['pageNum'] = page
+        params['pageSize'] = page_size
+        req_page_unitName = make_request(query_url, params, req_list[0]['unitName'])
+        if req_page_unitName and 'params' in req_page_unitName and 'list' in req_page_unitName['params']:
+            unitName_list = req_page_unitName['params']['list']
+            for item in unitName_list:
+                if item.get('domain') and item.get('unitName'):
+                    success_output = f"id:{id}\tdomainId:{item['domainId']}\tunitName:{item['unitName']}\tnatureName:{item['natureName']}\tdomain:{item['domain']}\tmainLicence:{item['mainLicence']}\tserviceLicence:{item['serviceLicence']}\tupdateRecordTime:{item['updateRecordTime']}"
+                    if item['domainId']:
+                        if item['domainId'] not in domainId_list:
+                            domainId_list.append(item['domainId'])
+                            api_logger.success(success_output)
+                        else:
+                            # 记录重复domainId到新日志
+                            duplicate_output = f"重复domainId: {item['domainId']}\tunitName:{item['unitName']}\tdomain:{item['domain']}"
+                            api_logger.write_log_error('log/duplicate_domainid.log', duplicate_output)
+                else:
+                    api_logger.warning("unitName or domain is None...")
+        else:
+            api_logger.warning(f"No unitName_list found for {req_list} on page {page}. Skipping...")
     return domainId_list
 
 def query_from(query_url, search_data, id):
