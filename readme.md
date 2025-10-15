@@ -11,6 +11,9 @@
 docker pull yiminger/ymicp
 # 运行并转发容器16181端口到本地所有地址
 docker run -d -p 16181:16181 yiminger/ymicp
+
+稳定旧版
+docker run -d -p 16181:16181 yiminger/ymicp:yolo8_latest
 ```
 docker国内加速，在下面监控中挨个测试就行
 ```
